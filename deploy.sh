@@ -5,7 +5,7 @@
 # ====================================================================
 
 # 1. TENTUKAN URL REPOSITORY GITHUB ANDA (Ganti 'albrian' & 'hailmary' sesuai akun Anda!)
-REPO_URL="https://github.com/albrian/hailmary.git"
+REPO_URL="https://github.com/Albrianp/hailmary.git"
 
 echo "🌌 [Hailmary Project] Memulai proses otomatisasi deployment..."
 
