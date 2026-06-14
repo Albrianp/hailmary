@@ -5,11 +5,12 @@
 }
 
 body {
-    background-color: #050c1a; /* 🔵 Biru Tua Midnight Pekat */
-    color: #ffffff; /* ⚪ Teks Utama Menjadi Putih Bersih agar Kontras */
+    background-color: #050c1a;
+    color: #ffffff; 
     overflow-x: hidden;
     font-family: 'Montserrat', sans-serif;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.8s cubic-bezier(0.25, 1, 0.5, 1), color 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* Cosmic Background */
@@ -21,12 +22,13 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -1;
+    transition: filter 0.8s cubic-bezier(0.25, 1, 0.5, 1), background 0.8s cubic-bezier(0.25, 1, 0.5, 1);
     
 /* CONFIG AURORA NEBULA */
 background: 
-    radial-gradient(circle at 20% 30%, rgba(0, 242, 254, 0.15) 0%, transparent 50%),  /* Aurora Toska */
-    radial-gradient(circle at 80% 70%, rgba(127, 0, 255, 0.18) 0%, transparent 60%),  /* Aurora Ungu/Violet */
-    radial-gradient(circle at 50% 20%, rgba(0, 180, 100, 0.08) 0%, transparent 45%),  /* Aurora Hijau Tipis */
+    radial-gradient(circle at 20% 30%, rgba(0, 242, 254, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(127, 0, 255, 0.18) 0%, transparent 60%),  
+    radial-gradient(circle at 50% 20%, rgba(0, 180, 100, 0.08) 0%, transparent 45%),  
     #030914; /* Warna dasar hitam midnight space */
 }
 
@@ -125,6 +127,11 @@ nav.active {
     letter-spacing: 3px;
 }
 
+.nav-links {
+    display: flex;
+    align-items: center;
+}
+
 .nav-links button {
     background: none; 
     border: none; 
@@ -140,6 +147,31 @@ nav.active {
 .nav-links button.active, .nav-links button:hover { 
     color: #ffffff; 
     transform: translateY(-1px); 
+}
+
+/* DESAIN TOMBOL SAKELAR KOSMIK (DAYLIGHT SWITCH) */
+.cosmic-btn {
+    background: rgba(212, 175, 55, 0.08); 
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: #d4af37; 
+    font-size: 10px !important; 
+    font-weight: 500;
+    margin-left: 45px; 
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer; 
+    letter-spacing: 2px; 
+    text-transform: uppercase;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.cosmic-btn:hover {
+    background: rgba(212, 175, 55, 0.2) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
 }
 
 /* EFEK SLIDE-IN KOSMIK */
@@ -163,7 +195,8 @@ section {
     transform: translateX(15px); 
     
     transition: transform 0.18s cubic-bezier(0, 1, 0, 1), 
-                opacity 0.18s ease-out;
+                opacity 0.18s ease-out,
+                color 0.8s ease;
 }
 
 /* Pengaturan Teks  */
@@ -174,6 +207,7 @@ section {
     font-weight: 300; 
     line-height: 1.15;
     margin-bottom: 25px; 
+    transition: color 0.8s ease;
 }
 
 .content-box h2 { 
@@ -194,13 +228,14 @@ section {
     font-weight: 300; 
     font-size: 0.95rem;
     letter-spacing: 0.2px;
+    transition: color 0.8s ease;
 }
 
 /* 2. KONDISI AKTIF */
 section[style*="visibility: visible"] .content-box,
 .content-box[style*="opacity: 1"] {
     opacity: 1 !important;
-    transform: translateX(0) !important; /* Langsung dikembalikan ke tengah tanpa ampun */
+    transform: translateX(0) !important;
 }
 
 /* INFO KONTAK */
@@ -212,4 +247,32 @@ section[style*="visibility: visible"] .content-box,
     font-style: italic; 
     font-weight: 400;
     letter-spacing: 1px;
+}
+
+/* MANIPULASI VISUAL SAAT MODE SIANG AKTIF */
+body.day-mode {
+    background-color: transparent; 
+    color: #ffffff; 
+}
+
+body.day-mode #webgl-canvas {
+    background: transparent !important;
+    filter: none !important;
+}
+
+body.day-mode .content-box h1 {
+    color: #ffffff;
+}
+
+body.day-mode .content-box p {
+    color: #cbd5e1;
+}
+
+body.day-mode .nav-links button {
+    color: #94a3b8;
+}
+
+body.day-mode .nav-links button.active, 
+body.day-mode .nav-links button:hover {
+    color: #ffffff;
 }

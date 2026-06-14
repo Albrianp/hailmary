@@ -1,19 +1,22 @@
-// --- THREE.JS ENGINE SETUP ---
+// --- SETUP CANVAS & SCENE ---
 const canvas = document.querySelector('#webgl-canvas');
 const scene = new THREE.Scene();
 
-// PERBAIKAN KABUT
-scene.fog = new THREE.FogExp2("#030914", 0.02);
+const textureLoader = new THREE.TextureLoader();
+const spaceBackground = textureLoader.load('bg.jpg');
+scene.background = spaceBackground;
+
+const fogColor = new THREE.Color("#030914");
+scene.fog = new THREE.FogExp2(fogColor, 0.02);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.z = 6;
 
-// PERBAIKAN RENDERER
-const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-// PENCAHAYAAN LEMBUT
+// --- LAMPU (Hanya berpengaruh pada objek non-Basic) ---
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.8); 
 scene.add(ambientLight);
 
@@ -22,8 +25,7 @@ sunLight.position.set(7, 4, 4);
 scene.add(sunLight);
 
 
-// SISTEM KOSMIK
-
+// --- PARTIKEL BINTANG ---
 const particleCount = 1800; 
 const particleGeo = new THREE.BufferGeometry();
 const particlePositions = new Float32Array(particleCount * 3);
@@ -37,17 +39,19 @@ particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions
 
 const particleMat = new THREE.PointsMaterial({
     color: "#d4af37",
-    size: 0.03, 
+    size: 0.035, 
     transparent: true,
-    opacity: 0.6,
+    opacity: 0.9, 
     blending: THREE.AdditiveBlending
 });
 const partikelEmas = new THREE.Points(particleGeo, particleMat);
 scene.add(partikelEmas);
 
+
+// --- METEOR / KOMET ---
 const meteorCount = 8;
 const meteors = [];
-const meteorMat = new THREE.LineBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.4 });
+const meteorMat = new THREE.LineBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.5 });
 
 for (let i = 0; i < meteorCount; i++) {
     const meteorGeo = new THREE.BufferGeometry().setFromPoints([
@@ -71,20 +75,21 @@ function resetMeteor(meteor) {
 }
 
 
-// OBJEK 3D UTAMA: MATTE SURFACE PLANET
+// --- OBJEK LOADING (TORUS KNOT) ---
 const loadingGeo = new THREE.TorusKnotGeometry(1.3, 0.3, 120, 16);
 const loadingMat = new THREE.MeshBasicMaterial({ color: "#b59410", wireframe: true, transparent: true, opacity: 0.25 });
 const loadingObj = new THREE.Mesh(loadingGeo, loadingMat);
 scene.add(loadingObj);
 
-const textureLoader = new THREE.TextureLoader();
-const earthTexture = textureLoader.load('earth.jpg'); 
+
+// --- OBJEK BUMI (Menggunakan MeshBasicMaterial agar bisa bypass lampu) ---
+const earthNightTexture = textureLoader.load('earth.jpg'); 
+const earthDayTexture = textureLoader.load('earth2.jpg'); 
 
 const earthGeo = new THREE.SphereGeometry(1.8, 64, 64); 
-const earthMat = new THREE.MeshPhongMaterial({
-    map: earthTexture,            
-    specular: new THREE.Color('#000000'), 
-    shininess: 0
+const earthMat = new THREE.MeshBasicMaterial({
+    map: earthNightTexture,
+    color: new THREE.Color(0xffffff) // Diperlukan agar warna gambar keluar 100% akurat
 });
 
 const modelUtama = new THREE.Mesh(earthGeo, earthMat);
@@ -92,7 +97,7 @@ modelUtama.visible = false;
 scene.add(modelUtama);
 
 
-// PROGRESS LOADING OTOMATIS
+// --- PROGRESS LOADING ---
 let progress = 0;
 const progressBar = document.getElementById('progress-bar');
 const intervalLoading = setInterval(() => {
@@ -119,7 +124,7 @@ const intervalLoading = setInterval(() => {
 }, 120);
 
 
-// INTERAKSI MOUSE PARALAKS ---
+// --- MOUSE & TOUCH PARALLAX ---
 let mouseX = 0; let mouseY = 0;
 let targetX = 0; let targetY = 0;
 
@@ -133,8 +138,34 @@ document.addEventListener('touchmove', (e) => {
 });
 
 
+// --- SAKELAR SIANG / MALAM ---
+const toggleBtn = document.getElementById('daylightToggle');
 
-// ENGINE ANIMATION LOOP
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('day-mode');
+        const isDayMode = document.body.classList.contains('day-mode');
+        
+        if (isDayMode) {
+            toggleBtn.innerHTML = '☀️ Mode Siang';
+            
+            // Tampilkan gambar earth2.jpg murni tanpa pengaruh lampu webgl
+            earthMat.map = earthDayTexture;
+            earthMat.color.setHex(0xffffff); 
+            earthMat.needsUpdate = true;
+        } else {
+            toggleBtn.innerHTML = '🌙 Mode Malam';
+            
+            // Kembalikan ke gambar malam
+            earthMat.map = earthNightTexture;
+            earthMat.color.setHex(0xffffff); 
+            earthMat.needsUpdate = true;
+        }
+    });
+}
+
+
+// --- ANIMATION LOOP ---
 let clock = new THREE.Clock();
 
 function animate() {
@@ -144,7 +175,8 @@ function animate() {
     targetX += (mouseX - targetX) * 0.05;
     targetY += (mouseY - targetY) * 0.05;
 
-    particleMat.opacity = 0.5 + Math.sin(elapsedTime * 2.0) * 0.15;
+    // Kedipan bintang konstan cerah
+    particleMat.opacity = 0.8 + Math.sin(elapsedTime * 2.5) * 0.15;
 
     meteors.forEach(meteor => {
         meteor.position.x += meteor.speed;
@@ -162,8 +194,9 @@ function animate() {
     loadingObj.rotation.x += (targetY * rotSpeed - loadingObj.rotation.x) * 0.05;
 
     if (modelUtama) {
-        modelUtama.rotation.y = (elapsedTime * 0.12) + (targetX * rotSpeed); 
-        modelUtama.rotation.x = (elapsedTime * 0.03) + (targetY * rotSpeed);
+        // Rotasi bumi dipercepat
+        modelUtama.rotation.y = (elapsedTime * 0.25) + (targetX * rotSpeed); 
+        modelUtama.rotation.x = (elapsedTime * 0.04) + (targetY * rotSpeed);
         
         if(document.getElementById('loader-wrapper').style.display === 'none') {
             loadingObj.visible = false;
@@ -175,8 +208,7 @@ function animate() {
 animate();
 
 
-
-// SCROLL ENGINE INSTAN TANPA BENTROK CSS
+// --- SCROLL CONFIG ---
 let targetScale = 1.5;
 window.addEventListener('scroll', () => {
     const scrollPercent = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
