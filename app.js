@@ -2,7 +2,16 @@
 const canvas = document.querySelector('#webgl-canvas');
 const scene = new THREE.Scene();
 
-const textureLoader = new THREE.TextureLoader();
+let texturesLoaded = false;
+let fakeLoadingComplete = false;
+
+const loadingManager = new THREE.LoadingManager();
+loadingManager.onLoad = () => {
+    texturesLoaded = true;
+    checkAndHideLoader();
+};
+
+const textureLoader = new THREE.TextureLoader(loadingManager);
 const spaceBackground = textureLoader.load('bg.jpg');
 scene.background = spaceBackground;
 
@@ -16,7 +25,7 @@ const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alph
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-// --- LAMPU (Hanya berpengaruh pada objek non-Basic) ---
+// --- LAMPU ---
 const ambientLight = new THREE.AmbientLight(0xffffff, 1.8); 
 scene.add(ambientLight);
 
@@ -82,18 +91,18 @@ const loadingObj = new THREE.Mesh(loadingGeo, loadingMat);
 scene.add(loadingObj);
 
 
-// --- OBJEK BUMI (Menggunakan MeshBasicMaterial agar bisa bypass lampu) ---
+// --- OBJEK BUMI ---
 const earthNightTexture = textureLoader.load('earth.jpg'); 
 const earthDayTexture = textureLoader.load('earth2.jpg'); 
 
 const earthGeo = new THREE.SphereGeometry(1.8, 64, 64); 
 const earthMat = new THREE.MeshBasicMaterial({
     map: earthNightTexture,
-    color: new THREE.Color(0xffffff) // Diperlukan agar warna gambar keluar 100% akurat
+    color: new THREE.Color(0xffffff)
 });
 
 const modelUtama = new THREE.Mesh(earthGeo, earthMat);
-modelUtama.visible = false;    
+modelUtama.visible = false; // Awalnya mati, diaktifkan lewat GSAP   
 scene.add(modelUtama);
 
 
@@ -105,7 +114,18 @@ const intervalLoading = setInterval(() => {
     if (progress >= 100) {
         progress = 100;
         clearInterval(intervalLoading);
-        
+        fakeLoadingComplete = true;
+        checkAndHideLoader(); 
+    }
+    progressBar.style.width = progress + '%';
+}, 120);
+
+function checkAndHideLoader() {
+    if (fakeLoadingComplete && texturesLoaded) {
+        // PERBAIKAN: Matikan objek loading dan hidupkan bumi SEBELUM animasi geser tirai berjalan
+        loadingObj.visible = false;
+        modelUtama.visible = true;
+
         gsap.to("#loader-title", { opacity: 0, y: -50, duration: 0.6 });
         gsap.to("#progress-container, .loading-text", { opacity: 0, duration: 0.3 });
         gsap.to("#loader-wrapper", { 
@@ -120,8 +140,7 @@ const intervalLoading = setInterval(() => {
             }
         });
     }
-    progressBar.style.width = progress + '%';
-}, 120);
+}
 
 
 // --- MOUSE & TOUCH PARALLAX ---
@@ -148,15 +167,11 @@ if (toggleBtn) {
         
         if (isDayMode) {
             toggleBtn.innerHTML = '☀️ Mode Siang';
-            
-            // Tampilkan gambar earth2.jpg murni tanpa pengaruh lampu webgl
             earthMat.map = earthDayTexture;
             earthMat.color.setHex(0xffffff); 
             earthMat.needsUpdate = true;
         } else {
             toggleBtn.innerHTML = '🌙 Mode Malam';
-            
-            // Kembalikan ke gambar malam
             earthMat.map = earthNightTexture;
             earthMat.color.setHex(0xffffff); 
             earthMat.needsUpdate = true;
@@ -175,7 +190,6 @@ function animate() {
     targetX += (mouseX - targetX) * 0.05;
     targetY += (mouseY - targetY) * 0.05;
 
-    // Kedipan bintang konstan cerah
     particleMat.opacity = 0.8 + Math.sin(elapsedTime * 2.5) * 0.15;
 
     meteors.forEach(meteor => {
@@ -190,19 +204,18 @@ function animate() {
     partikelEmas.rotation.y = elapsedTime * 0.003;
     
     const rotSpeed = 2.0;
-    loadingObj.rotation.y += (targetX * rotSpeed - loadingObj.rotation.y) * 0.05;
-    loadingObj.rotation.x += (targetY * rotSpeed - loadingObj.rotation.x) * 0.05;
 
-    if (modelUtama) {
-        // Rotasi bumi dipercepat
+    // PERBAIKAN: Hapus logika pengecekan DOM 'none' yang lambat, rotasi ikuti status visibility objek secara langsung
+    if (loadingObj.visible) {
+        loadingObj.rotation.y += (targetX * rotSpeed - loadingObj.rotation.y) * 0.05;
+        loadingObj.rotation.x += (targetY * rotSpeed - loadingObj.rotation.x) * 0.05;
+    }
+
+    if (modelUtama && modelUtama.visible) {
         modelUtama.rotation.y = (elapsedTime * 0.25) + (targetX * rotSpeed); 
         modelUtama.rotation.x = (elapsedTime * 0.04) + (targetY * rotSpeed);
-        
-        if(document.getElementById('loader-wrapper').style.display === 'none') {
-            loadingObj.visible = false;
-            modelUtama.visible = true; 
-        }
     }
+    
     renderer.render(scene, camera);
 }
 animate();
